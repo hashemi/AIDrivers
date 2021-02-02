@@ -1,12 +1,12 @@
 import Darwin
 
-struct Pixel: Equatable {
+struct Color: Equatable {
     let r, g, b: UInt8
     
-    static let black = Pixel(r: 0, g: 0, b: 0)
-    static let white = Pixel(r: 255, g: 255, b: 255)
-    static let green = Pixel(r: 0, g: 255, b: 0)
-    static let blue = Pixel(r: 0, g: 0, b: 255)
+    static let black = Color(r: 0, g: 0, b: 0)
+    static let white = Color(r: 255, g: 255, b: 255)
+    static let green = Color(r: 0, g: 255, b: 0)
+    static let blue = Color(r: 0, g: 0, b: 255)
     
     var value: Int {
         Int(r) << 16 | Int(g) << 8 | Int(b) << 0
@@ -19,9 +19,9 @@ class PPM {
     
     private let data: UnsafeMutableBufferPointer<UInt8>
     
-    subscript(_ x: Int, _ y: Int) -> Pixel {
+    subscript(_ x: Int, _ y: Int) -> Color {
         get {
-            Pixel(
+            Color(
                 r: data[3 * (y * width + x) + 0],
                 g: data[3 * (y * width + x) + 1],
                 b: data[3 * (y * width + x) + 2]
