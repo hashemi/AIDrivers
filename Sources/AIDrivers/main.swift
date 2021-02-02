@@ -134,7 +134,7 @@ class Map {
         for y in 0..<height {
             for x in 0..<width {
                 let c = ppm[x, y].value
-                let v: UInt = c >> 16 > 0x7f ? 0 : 1
+                let v: UInt = c >> 16 > 0x7f ? 1 : 0
                 let i = y * width + x
                 self.d[i / Map.b] |= v << (i % Map.b)
             }
