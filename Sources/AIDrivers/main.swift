@@ -5,6 +5,12 @@ struct Pixel: Equatable {
     
     static let black = Pixel(r: 0, g: 0, b: 0)
     static let white = Pixel(r: 255, g: 255, b: 255)
+    static let green = Pixel(r: 0, g: 255, b: 0)
+    static let blue = Pixel(r: 0, g: 0, b: 255)
+    
+    var value: Int {
+        Int(r) << 16 | Int(g) << 8 | Int(b) << 0
+    }
 }
 
 class PPM {
@@ -86,7 +92,76 @@ class PPM {
     }
 }
 
+class Map {
+    let width, height: Int
+    let sx, sy: Int
+    let sa: Float
+    let d: UnsafeMutableBufferPointer<UInt>
+    
+    static let b = 8
+
+    init(ppm: PPM) {
+        self.width = ppm.width
+        self.height = ppm.height
+
+        self.d = .allocate(capacity: (width * height + Map.b - 1) / Map.b)
+        self.d.initialize(repeating: 0)
+
+        var sx = width / 2
+        var sy = height / 2
+        var sa: Float = 0
+        
+        for y in 0..<height {
+            for x in 0..<width {
+                if ppm[x, y] == .green {
+                    sx = x
+                    sy = y
+                }
+            }
+        }
+        self.sx = sx
+        self.sy = sy
+        
+        for y in 0..<height {
+            for x in 0..<width {
+                if ppm[x, y] == .blue {
+                    sa = atan2(Float(y - sy), Float(x - sx))
+                }
+            }
+        }
+        self.sa = sa
+        
+        for y in 0..<height {
+            for x in 0..<width {
+                let c = ppm[x, y].value
+                let v: UInt = c >> 16 > 0x7f ? 0 : 1
+                let i = y * width + x
+                self.d[i / Map.b] |= v << (i % Map.b)
+            }
+        }
+    }
+    
+    subscript(_ x: Int, _ y: Int) -> Int {
+        let i = y * width + x
+        return Int(d[i / Map.b] >> (i % Map.b) & 1)
+    }
+    
+    func draw(on ppm: PPM) {
+        let s = ppm.width / width
+        for y in 0..<height {
+            for x in 0..<width {
+                ppm[x, y] = self[x/s, y/s] != 0 ? .white : .black
+            }
+        }
+    }
+    
+    deinit {
+        d.deallocate()
+    }
+}
+
 if let ppm = PPM() {
-    ppm.inverse()
+    let m = Map(ppm: ppm)
+    m.draw(on: ppm)
     ppm.write()
 }
