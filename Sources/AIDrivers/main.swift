@@ -136,16 +136,16 @@ class Map {
         }
     }
     
-    subscript(_ x: Int, _ y: Int) -> Int {
+    subscript(_ x: Int, _ y: Int) -> Bool {
         let i = y * width + x
-        return Int(d[i / Map.b] >> (i % Map.b) & 1)
+        return (d[i / Map.b] >> (i % Map.b) & 1) != 0
     }
     
     func draw(on ppm: PPM) {
         let s = ppm.width / width
         for y in 0..<height {
             for x in 0..<width {
-                ppm[x, y] = self[x/s, y/s] != 0 ? .white : .black
+                ppm[x, y] = self[x/s, y/s] ? .white : .black
             }
         }
     }
