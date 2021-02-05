@@ -18,9 +18,49 @@ struct Color: Equatable {
     }
 }
 
+struct SysConf {
+    let speedMin: Float
+    let speedMax: Float
+    let control: Float
+    
+    static let `default` = SysConf(
+        speedMin: 0.1,
+        speedMax: 0.5,
+        control: .pi/128
+    )
+}
+
+struct Config {
+    var c: (Float, Float)
+    
+    init(_ c1: Float, _ c2: Float) {
+        self.c = (c1, c2)
+    }
+}
+
 struct Vehicle {
     var x, y, a: Float
     let color: Color
+    
+    mutating func drive(c: Config, map: Map, cfg: SysConf) -> Bool {
+        guard map.alive(vehicle: self) else { return false }
+        
+        let s = (
+            map.sense(x: x, y: y, a: a + .pi / -4),
+            map.sense(x: x, y: y, a: a),
+            map.sense(x: x, y: y, a: a + .pi/4)
+        )
+        
+        let steering = (s.2 * c.c.0) - s.0 * c.c.0
+        let throttle = max(cfg.speedMin, min(cfg.speedMax, s.1 * c.c.1))
+        
+        a += abs(steering) > cfg.control ?
+            copysignf(cfg.control, steering) : steering
+        x = throttle * cosf(a)
+        y = throttle * sinf(a)
+        
+        return true
+    }
 }
 
 class PPM {
@@ -218,6 +258,10 @@ class Map {
             _ = sense(x: v.x, y: v.y, a: v.a)
             _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4)
         }
+    }
+    
+    func alive(vehicle: Vehicle) -> Bool {
+        !self[Int(vehicle.x), Int(vehicle.y)]
     }
     
     deinit {
