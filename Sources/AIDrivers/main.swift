@@ -7,6 +7,19 @@ struct Color: Equatable {
     static let white = Color(r: 255, g: 255, b: 255)
     static let green = Color(r: 0, g: 255, b: 0)
     static let blue = Color(r: 0, g: 0, b: 255)
+
+    static var random: Color {
+        Color(
+            r: UInt8.random(in: UInt8.min..<UInt8.max) | 0x40,
+            g: UInt8.random(in: UInt8.min..<UInt8.max) | 0x40,
+            b: UInt8.random(in: UInt8.min..<UInt8.max) | 0x40
+        )
+    }
+}
+
+struct Vehicle {
+    var x, y, a: Float
+    let color: Color
 }
 
 class PPM {
@@ -150,6 +163,24 @@ class Map {
         }
     }
     
+    func draw(vehicles: [Vehicle], on ppm: PPM) {
+        let s = ppm.width / width
+        for v in vehicles {
+            for d in -s*2..<s*2 {
+                for j in -s/2..<s/2 {
+                    let x = Float(s) * v.x
+                        + Float(j) * cosf(v.a - Float.pi / 2)
+                        + Float(d) * cosf(v.a) / 2
+                    let y = Float(s) * v.y
+                        + Float(j) * sinf(v.a - Float.pi / 2)
+                        + Float(d) * sinf(v.a) / 2
+                    print(x, y, v.color)
+                    ppm[Int(x), Int(y)] = v.color
+                }
+            }
+        }
+    }
+    
     deinit {
         d.deallocate()
     }
@@ -158,5 +189,14 @@ class Map {
 if let ppm = PPM() {
     let m = Map(ppm: ppm)
     m.draw(on: ppm)
-    ppm.write()
+    
+    let vehicles = (0..<16).map { _ in
+        Vehicle(x: Float(m.sx),
+                y: Float(m.sy),
+                a: m.sa,
+                color: .random
+        )
+    }
+
+    m.draw(vehicles: vehicles, on: ppm)
 }
