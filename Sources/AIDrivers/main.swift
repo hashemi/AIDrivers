@@ -7,6 +7,7 @@ struct Color: Equatable {
     static let white = Color(r: 255, g: 255, b: 255)
     static let green = Color(r: 0, g: 255, b: 0)
     static let blue = Color(r: 0, g: 0, b: 255)
+    static let red = Color(r: 0, g: 0, b: 255)
 
     static var random: Color {
         Color(
@@ -181,6 +182,44 @@ class Map {
         }
     }
     
+    func sense(x: Float, y: Float, a: Float, on ppm: PPM? = nil) -> Float {
+        let dx = cosf(a)
+        let dy = sinf(a)
+        var d = 1
+        while true {
+            let bx = x + dx * Float(d)
+            let by = y + dy * Float(d)
+            let ix = Int(bx)
+            let iy = Int(by)
+            if ix < 0 || ix >= width || iy < 0 || iy >= height {
+                break
+            }
+            if self[ix, iy] {
+                break
+            }
+            if let ppm = ppm {
+                let s = ppm.width / width
+                for py in 0..<s {
+                    for px in 0..<s {
+                        ppm[ix * s + px, iy * s + py] = .red
+                    }
+                }
+            }
+            d += 1
+        }
+        
+        let d_ = Float(d)
+        return sqrtf(d_*dx*d_*dx + d_*dy*d_*dy)
+    }
+
+    func drawBeams(vehicles: [Vehicle], on ppm: PPM) {
+        for v in vehicles {
+            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4)
+            _ = sense(x: v.x, y: v.y, a: v.a)
+            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4)
+        }
+    }
+    
     deinit {
         d.deallocate()
     }
@@ -199,4 +238,7 @@ if let ppm = PPM() {
     }
 
     m.draw(vehicles: vehicles, on: ppm)
+    m.drawBeams(vehicles: vehicles, on: ppm)
+    
+    ppm.write()
 }
