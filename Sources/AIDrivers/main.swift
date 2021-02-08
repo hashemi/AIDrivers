@@ -227,7 +227,6 @@ class Map {
                     let y = Float(s) * v.y
                         + Float(j) * sinf(v.a - Float.pi / 2)
                         + Float(d) * sinf(v.a) / 2
-                    print(x, y, v.color)
                     ppm[Int(x), Int(y)] = v.color
                 }
             }
