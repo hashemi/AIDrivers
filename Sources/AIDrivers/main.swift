@@ -209,8 +209,8 @@ class Map {
     
     func draw(on ppm: PPM) {
         let s = ppm.width / width
-        for y in 0..<height {
-            for x in 0..<width {
+        for y in 0..<ppm.height {
+            for x in 0..<ppm.width {
                 ppm[x, y] = self[x/s, y/s] ? .white : .black
             }
         }
