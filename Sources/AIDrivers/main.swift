@@ -130,6 +130,15 @@ class PPM {
         }
     }
     
+    init(width: Int, height: Int) {
+        self.width = width
+        self.height = height
+        
+        let size = 3 * width * height
+        
+        self.data = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: size)
+    }
+    
     deinit {
         self.data.deallocate()
     }
