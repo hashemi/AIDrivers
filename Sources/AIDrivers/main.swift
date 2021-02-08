@@ -97,11 +97,11 @@ class PPM {
     }
     
     init?(input: UnsafeMutablePointer<FILE>) {
-        guard let line1 = readLine2(input: input, strippingNewline: true), line1 == "P6" else {
+        guard let line1 = readLine2(input: input), line1 == "P6" else {
             return nil
         }
 
-        guard let line2 = readLine2(input: input, strippingNewline: true) else {
+        guard let line2 = readLine2(input: input) else {
             return nil
         }
 
@@ -113,7 +113,7 @@ class PPM {
             return nil
         }
         
-        guard readLine2(input: input, strippingNewline: true) != nil else {
+        guard readLine2(input: input) != nil else {
             return nil
         }
         
