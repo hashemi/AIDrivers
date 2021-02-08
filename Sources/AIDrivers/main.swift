@@ -36,6 +36,18 @@ struct Config {
     init(_ c1: Float, _ c2: Float) {
         self.c = (c1, c2)
     }
+
+func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true) -> String? {
+    var linePtr: UnsafeMutablePointer<Int8>?
+    var capacity: Int = 0
+    while getline(&linePtr, &capacity, input) < 0 && errno == EINTR { }
+    defer { free(linePtr) }
+    guard let cString = linePtr else { return nil }
+    var result = String(validatingUTF8: cString)
+    if strippingNewline, result?.last == "\n" || result?.last == "\r\n" {
+        _ = result?.removeLast()
+    }
+    return result
 }
 
 struct Vehicle {
@@ -84,12 +96,12 @@ class PPM {
         }
     }
     
-    init?() {
-        guard let line1 = readLine(strippingNewline: true), line1 == "P6" else {
+    init?(input: UnsafeMutablePointer<FILE>) {
+        guard let line1 = readLine2(input: input, strippingNewline: true), line1 == "P6" else {
             return nil
         }
 
-        guard let line2 = readLine(strippingNewline: true) else {
+        guard let line2 = readLine2(input: input, strippingNewline: true) else {
             return nil
         }
 
@@ -101,7 +113,7 @@ class PPM {
             return nil
         }
         
-        guard readLine(strippingNewline: true) != nil else {
+        guard readLine2(input: input, strippingNewline: true) != nil else {
             return nil
         }
         
@@ -111,7 +123,7 @@ class PPM {
         let size = 3 * w * h
 
         self.data = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: size)
-        let readBytes = fread(self.data.baseAddress, 1, size, stdin)
+        let readBytes = fread(self.data.baseAddress, 1, size, input)
         
         guard size == readBytes else {
             return nil
@@ -269,7 +281,7 @@ class Map {
     }
 }
 
-if let ppm = PPM() {
+if let ppm = PPM(input: stdin) {
     let m = Map(ppm: ppm)
     m.draw(on: ppm)
     
