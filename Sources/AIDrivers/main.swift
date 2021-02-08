@@ -265,9 +265,9 @@ class Map {
 
     func drawBeams(vehicles: [Vehicle], on ppm: PPM) {
         for v in vehicles {
-            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4)
-            _ = sense(x: v.x, y: v.y, a: v.a)
-            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4)
+            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4, on: ppm)
+            _ = sense(x: v.x, y: v.y, a: v.a, on: ppm)
+            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4, on: ppm)
         }
     }
     
