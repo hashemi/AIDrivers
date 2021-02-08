@@ -289,20 +289,30 @@ class Map {
     }
 }
 
-if let ppm = PPM(input: stdin) {
-    let m = Map(ppm: ppm)
-    m.draw(on: ppm)
-    
-    let vehicles = (0..<16).map { _ in
-        Vehicle(x: Float(m.sx),
-                y: Float(m.sy),
-                a: m.sa,
-                color: .random
-        )
-    }
+// Main
+let scale = 12
+let nvehicle = 16
 
-    m.draw(vehicles: vehicles, on: ppm)
-    m.drawBeams(vehicles: vehicles, on: ppm)
-    
-    ppm.write()
+guard let f = PPM(input: stdin) else {
+    fatalError("Couldn't read input map from stdin.")
 }
+
+let m = Map(ppm: f)
+
+var out: PPM
+let overlay = PPM(width: f.width * scale, height: f.height * scale)
+
+m.draw(on: overlay)
+
+var vehicles = (0..<16).map { _ in
+    Vehicle(x: Float(m.sx),
+            y: Float(m.sy),
+            a: m.sa,
+            color: .random
+    )
+}
+
+m.draw(vehicles: vehicles, on: overlay)
+m.drawBeams(vehicles: vehicles, on: overlay)
+
+overlay.write()
