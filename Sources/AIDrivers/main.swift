@@ -83,7 +83,7 @@ struct Vehicle {
     }
 }
 
-class PPM {
+final class PPM {
     let width: Int
     let height: Int
     
@@ -156,7 +156,7 @@ class PPM {
     }
 }
 
-class Map {
+final class Map {
     let width, height: Int
     let sx, sy: Int
     let sa: Float
