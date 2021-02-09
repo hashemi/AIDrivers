@@ -169,7 +169,6 @@ final class Map {
         self.height = ppm.height
 
         self.d = .allocate(capacity: (width * height + Map.b - 1) / Map.b)
-        self.d.initialize(repeating: 0)
 
         var sx = width / 2
         var sy = height / 2
