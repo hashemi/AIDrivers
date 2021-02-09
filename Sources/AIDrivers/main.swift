@@ -163,18 +163,6 @@ class PPM {
         self.data.deallocate()
     }
     
-    func inverse() {
-        for x in 0..<width {
-            for y in 0..<height {
-                if self[x, y] == .black {
-                    self[x, y] = .white
-                } else if self[x, y] == .white {
-                    self[x, y] = .black
-                }
-            }
-        }
-    }
-    
     func write() {
         print("P6")
         print("\(width) \(height)")
