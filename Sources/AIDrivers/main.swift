@@ -104,7 +104,13 @@ class PPM {
         }
     }
     
-    init?(input: UnsafeMutablePointer<FILE>) {
+    init(width: Int, height: Int) {
+        self.width = width
+        self.height = height
+        self.data = .allocate(capacity: 3 * width * height)
+    }
+    
+    convenience init?(input: UnsafeMutablePointer<FILE>) {
         guard let line1 = readLine2(input: input), line1 == "P6" else {
             return nil
         }
@@ -125,38 +131,17 @@ class PPM {
             return nil
         }
         
-        self.width = w
-        self.height = h
+        self.init(width: w, height: h)
         
-        let size = 3 * w * h
-
-        self.data = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: size)
-        let readBytes = fread(self.data.baseAddress, 1, size, input)
-        
-        guard size == readBytes else {
+        guard data.count == fread(data.baseAddress, 1, data.count, input) else {
             return nil
         }
     }
     
-    init(width: Int, height: Int) {
-        self.width = width
-        self.height = height
-        
-        let size = 3 * width * height
-        
-        self.data = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: size)
-    }
-    
-    private init(width: Int, height: Int, data: UnsafeMutableBufferPointer<UInt8>) {
-        self.width = width
-        self.height = height
-        self.data = data
-    }
-
     func copy() -> PPM {
-        let newData = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: data.count)
-        memcpy(newData.baseAddress, data.baseAddress, data.count)
-        return PPM(width: width, height: height, data: newData)
+        let copy = PPM(width: width, height: height)
+        memcpy(copy.data.baseAddress, self.data.baseAddress, data.count)
+        return copy
     }
 
     deinit {
