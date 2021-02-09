@@ -37,6 +37,14 @@ struct Config {
         self.c = (c1, c2)
     }
 
+    static var random: Config {
+        Config(
+            1.0 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32),
+            0.1 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
+        )
+    }
+}
+
 func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true) -> String? {
     var linePtr: UnsafeMutablePointer<Int8>?
     var capacity: Int = 0
@@ -139,6 +147,18 @@ class PPM {
         self.data = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: size)
     }
     
+    private init(width: Int, height: Int, data: UnsafeMutableBufferPointer<UInt8>) {
+        self.width = width
+        self.height = height
+        self.data = data
+    }
+
+    func copy() -> PPM {
+        let newData = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: data.count)
+        memcpy(newData.baseAddress, data.baseAddress, data.count)
+        return PPM(width: width, height: height, data: newData)
+    }
+
     deinit {
         self.data.deallocate()
     }
@@ -291,7 +311,13 @@ class Map {
 
 // Main
 let scale = 12
-let nvehicle = 16
+var nvehicle = 16
+let frameskip = 1
+let drop = 0
+let erase = false
+let reset = true
+let beams = false
+let cfg = SysConf.default
 
 guard let f = PPM(input: stdin) else {
     fatalError("Couldn't read input map from stdin.")
@@ -299,12 +325,13 @@ guard let f = PPM(input: stdin) else {
 
 let m = Map(ppm: f)
 
-var out: PPM
 let overlay = PPM(width: f.width * scale, height: f.height * scale)
 
 m.draw(on: overlay)
 
-var vehicles = (0..<16).map { _ in
+var c = (0..<16).map { _ in Config.random }
+
+var v = (0..<16).map { _ in
     Vehicle(x: Float(m.sx),
             y: Float(m.sy),
             a: m.sa,
@@ -312,7 +339,41 @@ var vehicles = (0..<16).map { _ in
     )
 }
 
-m.draw(vehicles: vehicles, on: overlay)
-m.drawBeams(vehicles: vehicles, on: overlay)
-
-overlay.write()
+for t in 0... {
+    if t >= drop && t % frameskip == 0 {
+        let out = overlay.copy()
+        if beams {
+            m.drawBeams(vehicles: v, on: out)
+        }
+        m.draw(vehicles: v, on: out)
+        out.write()
+    }
+    
+    for i in 0..<nvehicle {
+        _ = v[i].drive(c: c[i], map: m, cfg: cfg)
+    }
+    
+    var i = 0
+    while i < nvehicle {
+        if !m.alive(vehicle: v[i]) {
+            if !erase {
+                m.draw(vehicles: [v[i]], on: overlay)
+            }
+            if reset {
+                c[i] = Config.random
+                v[i].x = Float(m.sx)
+                v[i].y = Float(m.sy)
+                v[i].a = m.sa
+            } else {
+                nvehicle -= 1
+                v.remove(at: i)
+                c.remove(at: i)
+                i -= 1
+            }
+        }
+        i += 1
+    }
+    if nvehicle == 0 {
+        break
+    }
+}
