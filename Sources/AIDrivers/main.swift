@@ -60,7 +60,7 @@ struct Vehicle {
         let s = (
             map.sense(x: x, y: y, a: a + .pi / -4),
             map.sense(x: x, y: y, a: a),
-            map.sense(x: x, y: y, a: a + .pi/4)
+            map.sense(x: x, y: y, a: a + .pi / 4)
         )
         
         let steering = (s.2 * c.c.0) - s.0 * c.c.0
@@ -68,8 +68,8 @@ struct Vehicle {
         
         a += abs(steering) > cfg.control ?
             copysignf(cfg.control, steering) : steering
-        x = throttle * cosf(a)
-        y = throttle * sinf(a)
+        x += throttle * cosf(a)
+        y += throttle * sinf(a)
         
         return true
     }
