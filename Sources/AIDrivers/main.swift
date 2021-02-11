@@ -283,7 +283,7 @@ final class Map {
 
 // Main
 let scale = 12
-var nvehicle = 16
+let nvehicle = 16
 let frameskip = 1
 let drop = 0
 let erase = false
@@ -301,13 +301,15 @@ let overlay = PPM(width: f.width * scale, height: f.height * scale)
 
 m.draw(on: overlay)
 
-var c = (0..<16).map { _ in Config.random }
-
-var v = (0..<16).map { _ in
-    Vehicle(x: Float(m.sx),
+var vehicles = (0..<nvehicle).map { _ in
+    (
+        config: Config.random,
+        vehicle: Vehicle(
+            x: Float(m.sx),
             y: Float(m.sy),
             a: m.sa,
             color: .random
+        )
     )
 }
 
@@ -315,37 +317,27 @@ for t in 0... {
     if t >= drop && t % frameskip == 0 {
         let out = overlay.copy()
         if beams {
-            m.drawBeams(vehicles: v, on: out)
+            m.drawBeams(vehicles: vehicles.map { $0.vehicle }, on: out)
         }
-        m.draw(vehicles: v, on: out)
+        m.draw(vehicles: vehicles.map { $0.vehicle }, on: out)
         out.write()
     }
     
-    for i in 0..<nvehicle {
-        _ = v[i].drive(c: c[i], map: m, cfg: cfg)
-    }
-    
-    var i = 0
-    while i < nvehicle {
-        if !m.alive(vehicle: v[i]) {
+    for i in (0..<vehicles.count).reversed() {
+        _ = vehicles[i].vehicle.drive(c: vehicles[i].config, map: m, cfg: cfg)
+        if !m.alive(vehicle: vehicles[i].vehicle) {
             if !erase {
-                m.draw(vehicles: [v[i]], on: overlay)
+                m.draw(vehicles: [vehicles[i].vehicle], on: overlay)
             }
             if reset {
-                c[i] = Config.random
-                v[i].x = Float(m.sx)
-                v[i].y = Float(m.sy)
-                v[i].a = m.sa
+                vehicles[i].config = Config.random
+                vehicles[i].vehicle.x = Float(m.sx)
+                vehicles[i].vehicle.y = Float(m.sy)
+                vehicles[i].vehicle.a = m.sa
             } else {
-                nvehicle -= 1
-                v.remove(at: i)
-                c.remove(at: i)
-                i -= 1
+                vehicles.remove(at: i)
             }
         }
-        i += 1
     }
-    if nvehicle == 0 {
-        break
-    }
+    if vehicles.isEmpty { break }
 }
