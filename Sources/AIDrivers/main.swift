@@ -30,21 +30,6 @@ struct SysConf {
     )
 }
 
-struct Config {
-    var c: (Float, Float)
-    
-    init(_ c1: Float, _ c2: Float) {
-        self.c = (c1, c2)
-    }
-
-    static var random: Config {
-        Config(
-            1.0 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32),
-            0.1 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
-        )
-    }
-}
-
 func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true) -> String? {
     var linePtr: UnsafeMutablePointer<Int8>?
     var capacity: Int = 0
@@ -61,8 +46,28 @@ func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true)
 struct Vehicle {
     var x, y, a: Float
     let color: Color
+    var c0, c1: Float
     
-    mutating func drive(c: Config, map: Map, cfg: SysConf) -> Bool {
+    private static var randomConfig: (Float, Float) {
+        (
+            1.0 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32),
+            0.1 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
+        )
+    }
+    
+    init(x: Float, y: Float, a: Float) {
+        self.x = x
+        self.y = y
+        self.a = a
+        self.color = .random
+        (self.c0, self.c1) = Vehicle.randomConfig
+    }
+    
+    mutating func randomizeConfiguration() {
+        (self.c0, self.c1) = Vehicle.randomConfig
+    }
+    
+    mutating func drive(map: Map, cfg: SysConf) -> Bool {
         guard map.alive(vehicle: self) else { return false }
         
         let s = (
@@ -71,8 +76,8 @@ struct Vehicle {
             map.sense(x: x, y: y, a: a + .pi / 4)
         )
         
-        let steering = (s.2 * c.c.0) - s.0 * c.c.0
-        let throttle = max(cfg.speedMin, min(cfg.speedMax, s.1 * c.c.1))
+        let steering = (s.2 * c0) - s.0 * c0
+        let throttle = max(cfg.speedMin, min(cfg.speedMax, s.1 * c1))
         
         a += abs(steering) > cfg.control ?
             copysignf(cfg.control, steering) : steering
@@ -302,38 +307,30 @@ let overlay = PPM(width: f.width * scale, height: f.height * scale)
 m.draw(on: overlay)
 
 var vehicles = (0..<nvehicle).map { _ in
-    (
-        config: Config.random,
-        vehicle: Vehicle(
-            x: Float(m.sx),
-            y: Float(m.sy),
-            a: m.sa,
-            color: .random
-        )
-    )
+    Vehicle(x: Float(m.sx), y: Float(m.sy), a: m.sa)
 }
 
 for t in 0... {
     if t >= drop && t % frameskip == 0 {
         let out = overlay.copy()
         if beams {
-            m.drawBeams(vehicles: vehicles.map { $0.vehicle }, on: out)
+            m.drawBeams(vehicles: vehicles, on: out)
         }
-        m.draw(vehicles: vehicles.map { $0.vehicle }, on: out)
+        m.draw(vehicles: vehicles, on: out)
         out.write()
     }
     
     for i in (0..<vehicles.count).reversed() {
-        _ = vehicles[i].vehicle.drive(c: vehicles[i].config, map: m, cfg: cfg)
-        if !m.alive(vehicle: vehicles[i].vehicle) {
+        _ = vehicles[i].drive(map: m, cfg: cfg)
+        if !m.alive(vehicle: vehicles[i]) {
             if !erase {
-                m.draw(vehicles: [vehicles[i].vehicle], on: overlay)
+                m.draw(vehicles: [vehicles[i]], on: overlay)
             }
             if reset {
-                vehicles[i].config = Config.random
-                vehicles[i].vehicle.x = Float(m.sx)
-                vehicles[i].vehicle.y = Float(m.sy)
-                vehicles[i].vehicle.a = m.sa
+                vehicles[i].randomizeConfiguration()
+                vehicles[i].x = Float(m.sx)
+                vehicles[i].y = Float(m.sy)
+                vehicles[i].a = m.sa
             } else {
                 vehicles.remove(at: i)
             }
