@@ -149,6 +149,32 @@ final class PPM {
         return copy
     }
 
+    func draw(map: Map) {
+        let s = width / map.width
+        for y in 0..<height {
+            for x in 0..<width {
+                self[x, y] = map[x/s, y/s] ? .white : .black
+            }
+        }
+    }
+
+    func draw(vehicles: [Vehicle], map: Map) {
+        let s = self.width / map.width
+        for v in vehicles {
+            for d in -s*2..<s*2 {
+                for j in -s/2..<s/2 {
+                    let x = Float(s) * v.x
+                        + Float(j) * cosf(v.a - Float.pi / 2)
+                        + Float(d) * cosf(v.a) / 2
+                    let y = Float(s) * v.y
+                        + Float(j) * sinf(v.a - Float.pi / 2)
+                        + Float(d) * sinf(v.a) / 2
+                    self[Int(x), Int(y)] = v.color
+                }
+            }
+        }
+    }
+    
     deinit {
         self.data.deallocate()
     }
@@ -211,32 +237,6 @@ final class Map {
     subscript(_ x: Int, _ y: Int) -> Bool {
         let i = y * width + x
         return (d[i / Map.b] >> (i % Map.b) & 1) != 0
-    }
-    
-    func draw(on ppm: PPM) {
-        let s = ppm.width / width
-        for y in 0..<ppm.height {
-            for x in 0..<ppm.width {
-                ppm[x, y] = self[x/s, y/s] ? .white : .black
-            }
-        }
-    }
-    
-    func draw(vehicles: [Vehicle], on ppm: PPM) {
-        let s = ppm.width / width
-        for v in vehicles {
-            for d in -s*2..<s*2 {
-                for j in -s/2..<s/2 {
-                    let x = Float(s) * v.x
-                        + Float(j) * cosf(v.a - Float.pi / 2)
-                        + Float(d) * cosf(v.a) / 2
-                    let y = Float(s) * v.y
-                        + Float(j) * sinf(v.a - Float.pi / 2)
-                        + Float(d) * sinf(v.a) / 2
-                    ppm[Int(x), Int(y)] = v.color
-                }
-            }
-        }
     }
     
     func sense(x: Float, y: Float, a: Float, on ppm: PPM? = nil) -> Float {
@@ -304,7 +304,7 @@ let m = Map(ppm: f)
 
 let overlay = PPM(width: f.width * scale, height: f.height * scale)
 
-m.draw(on: overlay)
+overlay.draw(map: m)
 
 var vehicles = (0..<nvehicle).map { _ in
     Vehicle(x: Float(m.sx), y: Float(m.sy), a: m.sa)
@@ -316,7 +316,7 @@ for t in 0... {
         if beams {
             m.drawBeams(vehicles: vehicles, on: out)
         }
-        m.draw(vehicles: vehicles, on: out)
+        out.draw(vehicles: vehicles, map: m)
         out.write()
     }
     
@@ -324,7 +324,7 @@ for t in 0... {
         _ = vehicles[i].drive(map: m, cfg: cfg)
         if !m.alive(vehicle: vehicles[i]) {
             if !erase {
-                m.draw(vehicles: [vehicles[i]], on: overlay)
+                overlay.draw(vehicles: [vehicles[i]], map: m)
             }
             if reset {
                 vehicles[i].randomizeConfiguration()
