@@ -35,23 +35,13 @@ struct Vehicle {
     let color: Color
     var c0, c1: Float
     
-    private static var randomConfig: (Float, Float) {
-        (
-            1.0 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32),
-            0.1 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
-        )
-    }
-    
-    init(x: Float, y: Float, a: Float) {
+    init(x: Float, y: Float, a: Float, color: Color? = nil) {
         self.x = x
         self.y = y
         self.a = a
-        self.color = .random
-        (self.c0, self.c1) = Vehicle.randomConfig
-    }
-    
-    mutating func randomizeConfiguration() {
-        (self.c0, self.c1) = Vehicle.randomConfig
+        self.color = color ?? .random
+        self.c0 = 1.0 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
+        self.c1 = 0.1 * ldexpf(Float.random(in: 0..<Float(UInt32.max)), -32)
     }
     
     mutating func drive(map: Map, cfg: SysConf) -> Bool {
@@ -324,10 +314,7 @@ for t in 0... {
                 overlay.draw(vehicles: [vehicles[i]], map: m)
             }
             if reset {
-                vehicles[i].randomizeConfiguration()
-                vehicles[i].x = Float(m.sx)
-                vehicles[i].y = Float(m.sy)
-                vehicles[i].a = m.sa
+                vehicles[i] = Vehicle(x: Float(m.sx), y: Float(m.sy), a: m.sa, color: vehicles[i].color)
             } else {
                 vehicles.remove(at: i)
             }
