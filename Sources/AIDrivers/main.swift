@@ -30,19 +30,6 @@ struct SysConf {
     )
 }
 
-func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true) -> String? {
-    var linePtr: UnsafeMutablePointer<Int8>?
-    var capacity: Int = 0
-    while getline(&linePtr, &capacity, input) < 0 && errno == EINTR { }
-    defer { free(linePtr) }
-    guard let cString = linePtr else { return nil }
-    var result = String(validatingUTF8: cString)
-    if strippingNewline, result?.last == "\n" || result?.last == "\r\n" {
-        _ = result?.removeLast()
-    }
-    return result
-}
-
 struct Vehicle {
     var x, y, a: Float
     let color: Color
@@ -147,6 +134,19 @@ final class PPM {
     }
     
     convenience init?(input: UnsafeMutablePointer<FILE>) {
+        func readLine2(input: UnsafeMutablePointer<FILE>, strippingNewline: Bool = true) -> String? {
+            var linePtr: UnsafeMutablePointer<Int8>?
+            var capacity: Int = 0
+            while getline(&linePtr, &capacity, input) < 0 && errno == EINTR { }
+            defer { free(linePtr) }
+            guard let cString = linePtr else { return nil }
+            var result = String(validatingUTF8: cString)
+            if strippingNewline, result?.last == "\n" || result?.last == "\r\n" {
+                _ = result?.removeLast()
+            }
+            return result
+        }
+
         guard let line1 = readLine2(input: input), line1 == "P6" else {
             return nil
         }
