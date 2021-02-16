@@ -68,12 +68,12 @@ struct Vehicle {
     }
     
     mutating func drive(map: Map, cfg: SysConf) -> Bool {
-        guard map.alive(vehicle: self) else { return false }
+        guard alive(map: map) else { return false }
         
         let s = (
-            map.sense(x: x, y: y, a: a + .pi / -4),
-            map.sense(x: x, y: y, a: a),
-            map.sense(x: x, y: y, a: a + .pi / 4)
+            sense(map: map, direction: .pi / -4),
+            sense(map: map, direction: 0),
+            sense(map: map, direction: .pi / 4)
         )
         
         let steering = (s.2 * c0) - s.0 * c0
@@ -85,6 +85,33 @@ struct Vehicle {
         y += throttle * sinf(a)
         
         return true
+    }
+
+    func sense(map: Map, direction: Float, step: (Int, Int) -> () = { _, _ in }) -> Float {
+        let dx = cosf(a + direction)
+        let dy = sinf(a + direction)
+        var d = 1
+        while true {
+            let bx = x + dx * Float(d)
+            let by = y + dy * Float(d)
+            let ix = Int(bx)
+            let iy = Int(by)
+            if ix < 0 || ix >= map.width || iy < 0 || iy >= map.height {
+                break
+            }
+            if map[ix, iy] {
+                break
+            }
+            step(ix, iy)
+            d += 1
+        }
+        
+        let d_ = Float(d)
+        return sqrtf(d_*dx*d_*dx + d_*dy*d_*dy)
+    }
+
+    func alive(map: Map) -> Bool {
+        !map[Int(x), Int(y)]
     }
 }
 
@@ -178,6 +205,15 @@ final class PPM {
         }
     }
     
+    func drawBeams(vehicles: [Vehicle], map: Map) {
+        let scale = width / map.width
+        for v in vehicles {
+            _ = v.sense(map: map, direction: .pi / -4) { x, y in self[x, y, scale: scale] = .red }
+            _ = v.sense(map: map, direction: 0) { x, y in self[x, y, scale: scale] = .red }
+            _ = v.sense(map: map, direction: .pi / 4) { x, y in self[x, y, scale: scale] = .red }
+        }
+    }
+    
     deinit {
         self.data.deallocate()
     }
@@ -241,43 +277,7 @@ final class Map {
         let i = y * width + x
         return (d[i / Map.b] >> (i % Map.b) & 1) != 0
     }
-    
-    func sense(x: Float, y: Float, a: Float, step: (Int, Int) -> () = { _, _ in }) -> Float {
-        let dx = cosf(a)
-        let dy = sinf(a)
-        var d = 1
-        while true {
-            let bx = x + dx * Float(d)
-            let by = y + dy * Float(d)
-            let ix = Int(bx)
-            let iy = Int(by)
-            if ix < 0 || ix >= width || iy < 0 || iy >= height {
-                break
-            }
-            if self[ix, iy] {
-                break
-            }
-            step(ix, iy)
-            d += 1
-        }
-        
-        let d_ = Float(d)
-        return sqrtf(d_*dx*d_*dx + d_*dy*d_*dy)
-    }
 
-    func drawBeams(vehicles: [Vehicle], on ppm: PPM) {
-        let scale = ppm.width / width
-        for v in vehicles {
-            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4) { x, y in ppm[x, y, scale: scale] = .red }
-            _ = sense(x: v.x, y: v.y, a: v.a) { x, y in ppm[x, y, scale: scale] = .red }
-            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4) { x, y in ppm[x, y, scale: scale] = .red }
-        }
-    }
-    
-    func alive(vehicle: Vehicle) -> Bool {
-        !self[Int(vehicle.x), Int(vehicle.y)]
-    }
-    
     deinit {
         d.deallocate()
     }
@@ -311,7 +311,7 @@ for t in 0... {
     if t >= drop && t % frameskip == 0 {
         let out = overlay.copy()
         if beams {
-            m.drawBeams(vehicles: vehicles, on: out)
+            out.drawBeams(vehicles: vehicles, map: m)
         }
         out.draw(vehicles: vehicles, map: m)
         out.write()
@@ -319,7 +319,7 @@ for t in 0... {
     
     for i in (0..<vehicles.count).reversed() {
         _ = vehicles[i].drive(map: m, cfg: cfg)
-        if !m.alive(vehicle: vehicles[i]) {
+        if !vehicles[i].alive(map: m) {
             if !erase {
                 overlay.draw(vehicles: [vehicles[i]], map: m)
             }
