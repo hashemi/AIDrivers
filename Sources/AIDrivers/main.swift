@@ -94,18 +94,22 @@ final class PPM {
     
     private let data: UnsafeMutableBufferPointer<UInt8>
     
-    subscript(_ x: Int, _ y: Int) -> Color {
+    subscript(x: Int, y: Int, scale scale: Int = 1) -> Color {
         get {
             Color(
-                r: data[3 * (y * width + x) + 0],
-                g: data[3 * (y * width + x) + 1],
-                b: data[3 * (y * width + x) + 2]
+                r: data[3 * (y * scale * width + x * scale) + 0],
+                g: data[3 * (y * scale * width + x * scale) + 1],
+                b: data[3 * (y * scale * width + x * scale) + 2]
             )
         }
         set {
-            data[3 * (y * width + x) + 0] = newValue.r
-            data[3 * (y * width + x) + 1] = newValue.g
-            data[3 * (y * width + x) + 2] = newValue.b
+            for dx in 0..<scale {
+                for dy in 0..<scale {
+                    data[3 * ((y * scale + dy) * width + (x * scale + dx)) + 0] = newValue.r
+                    data[3 * ((y * scale + dy) * width + (x * scale + dx)) + 1] = newValue.g
+                    data[3 * ((y * scale + dy) * width + (x * scale + dx)) + 2] = newValue.b
+                }
+            }
         }
     }
     
@@ -150,10 +154,9 @@ final class PPM {
     }
 
     func draw(map: Map) {
-        let s = width / map.width
-        for y in 0..<height {
-            for x in 0..<width {
-                self[x, y] = map[x/s, y/s] ? .white : .black
+        for y in 0..<map.height {
+            for x in 0..<map.width {
+                self[x, y, scale: width / map.width] = map[x, y] ? .white : .black
             }
         }
     }
@@ -255,12 +258,7 @@ final class Map {
                 break
             }
             if let ppm = ppm {
-                let s = ppm.width / width
-                for py in 0..<s {
-                    for px in 0..<s {
-                        ppm[ix * s + px, iy * s + py] = .red
-                    }
-                }
+                ppm[ix, iy, scale: ppm.width / width] = .red
             }
             d += 1
         }
