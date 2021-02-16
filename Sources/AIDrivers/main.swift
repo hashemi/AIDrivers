@@ -242,7 +242,7 @@ final class Map {
         return (d[i / Map.b] >> (i % Map.b) & 1) != 0
     }
     
-    func sense(x: Float, y: Float, a: Float, on ppm: PPM? = nil) -> Float {
+    func sense(x: Float, y: Float, a: Float, step: (Int, Int) -> () = { _, _ in }) -> Float {
         let dx = cosf(a)
         let dy = sinf(a)
         var d = 1
@@ -257,9 +257,7 @@ final class Map {
             if self[ix, iy] {
                 break
             }
-            if let ppm = ppm {
-                ppm[ix, iy, scale: ppm.width / width] = .red
-            }
+            step(ix, iy)
             d += 1
         }
         
@@ -268,10 +266,11 @@ final class Map {
     }
 
     func drawBeams(vehicles: [Vehicle], on ppm: PPM) {
+        let scale = ppm.width / width
         for v in vehicles {
-            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4, on: ppm)
-            _ = sense(x: v.x, y: v.y, a: v.a, on: ppm)
-            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4, on: ppm)
+            _ = sense(x: v.x, y: v.y, a: v.a - .pi / 4) { x, y in ppm[x, y, scale: scale] = .red }
+            _ = sense(x: v.x, y: v.y, a: v.a) { x, y in ppm[x, y, scale: scale] = .red }
+            _ = sense(x: v.x, y: v.y, a: v.a + .pi / 4) { x, y in ppm[x, y, scale: scale] = .red }
         }
     }
     
